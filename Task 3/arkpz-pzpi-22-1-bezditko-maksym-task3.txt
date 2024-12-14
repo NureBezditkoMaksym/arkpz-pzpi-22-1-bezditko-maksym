@@ -1,0 +1,431 @@
+﻿Харківський університет радіоелектроніки
+Факультет комп'ютерних наук
+Кафедра програмної інженерії
+
+
+
+
+
+ЗВІТ
+до лабораторної роботи з дисципліни
+"Аналіз та рефакторинг коду"
+на тему: "РОЗРОБКА БІЗНЕС-ЛОГІКИ ТА ФУНКЦІЙ АДМІНІСТРУВАННЯ СЕРВЕРНОЇ ЧАСТИНИ ПРОГРАМНОЇ СИСТЕМИ"
+
+
+
+
+
+
+
+
+
+Виконав ст. гр. ПЗПІ-22-1
+Бездітко Максим Андрійович
+
+Перевірив
+Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Харків 2024 р.
+1 МЕТА
+
+Розробити бізнес-логіку та функції адміністрування серверної частини програмної системи.
+
+2 ХІД РОБОТИ
+
+1. Розробка бізнес-логіки серверної частини програмної системи.
+	Бізнес-логіка системи буде містити:
+нотифікація користувачів через мобільний клієнт про відсутність наданих метрик за поточний день;
+нотифікація користувачів через мобільний клієнт про показники статистики за минулий тиждень;
+створення статистичних звітів про показники здоров’я;
+авторизація та аутентифікація запитів.
+
+	Бізнес-логіка та загальна діяльність серверної частини представлена на рисунку 1.1.
+
+
+Рисунок 1.1 - UML діаграма діяльності для серверної частини
+
+	Те як система буде взаємодіяти в цілому, представлено на рисунку 1.2.
+
+
+Рисунок 1.2 - UML діаграма взаємодії для серверної частини
+
+2. Розробити функції адміністрування серверної частини програмної системи.
+	Функції адміністрування серверної частини будуть містити:
+можливість створення будь-якої сутності в системі;
+можливість отримання будь-якої сутності в системі;
+можливість отримання списку будь-яких сутностей в системі;
+можливість змінювати сутності, які є доцільними для цього;
+можливість видаляти сутності, які є доцільними для цього
+
+3. Створити програмну реалізацію бізнес-логіки та функцій адміністрування серверної частини.
+
+	Використовуючи технології Supabase Edge Functions, Deno та підготовлені на минулій лабораторній роботі моделі таблиць, розробимо типові CRUD шлях, які будуть використовуватися для функцій адміністрування системою. Так для кожної моделі будуть типові 5 шляхів: Створити, Змінити, Отримати всі, Отримати один, Видалити. Приклад таких шляхів для моделі User:
+
+Створення Edge Function для отримання всіх користувачів
+
+import { createClient } from '@supabase/supabase-js'; const supabaseUrl = '<supabase project url>';
+const supabaseKey = '<access key>';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export default async function handler(req, res) { const { data, error } = await supabase
+.from('users')
+.select('*');
+
+if (error) {
+return res.status(400).json({ error: error.message });
+}
+
+
+return res.status(200).json(data);
+}
+
+Створення Edge Function для отримання одного користувача
+
+import { createClient } from '@supabase/supabase-js'; const supabaseUrl = '<supabase project url>';
+const supabaseKey = '<access key>';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export default async function handler(req, res) { const { id } = req.query;
+
+const { data, error } = await supabase
+.from('users')
+.select('*')
+.eq('user_id', id)
+.single();
+
+if (error) {
+return res.status(404).json({ error: 'User not found' });
+}
+
+
+return res.status(200).json(data);
+
+Створення Edge Function для додавання нового користувача
+
+import { createClient } from '@supabase/supabase-js'; const supabaseUrl = '<supabase project url>';
+const supabaseKey = '<access key>';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export default async function handler(req, res) { const userData = req.body;
+
+const { data, error } = await supabase
+.from('users')
+.insert([userData]);
+
+if (error) {
+return res.status(400).json({ error: error.message });
+}
+
+
+return res.status(201).json(data);
+}
+
+Створення Edge Function для оновлення користувача
+
+import { createClient } from '@supabase/supabase-js'; const supabaseUrl = '<supabase project url>';
+const supabaseKey = '<access key>';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export default async function handler(req, res) { const { id } = req.query;
+const updates = req.body;
+
+const { data, error } = await supabase
+.from('users')
+.update(updates)
+.eq('user_id', id);
+
+if (error) {
+return res.status(400).json({ error: error.message });
+}
+
+
+return res.status(200).json(data);
+}
+
+
+
+Створення Edge Function для видалення користувача
+
+import { createClient } from '@supabase/supabase-js'; const supabaseUrl = '<supabase project url>';
+const supabaseKey = '<access key>';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export default async function handler(req, res) { const { id } = req.query;
+
+const { data, error } = await supabase
+.from('users')
+.delete()
+.eq('user_id', id);
+
+if (error) {
+return res.status(404).json({ error: 'User not found' });
+}
+
+return res.status(204).json({});
+}
+
+
+
+Створивши всі функції адміністрування, можемо перейти до бізнес-логіки, в першу чергу це авторизація та аутентифікація, які були зроблені на базі вбудованих в Supabase Auth jwt-токенів і які зручно застосовувати й кастомізувати під кожен шлях додатку.
+	
+Приклад коду для входу користувача в системі:
+
+const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password,
+});
+
+if (error) {
+      return {
+            success: false,
+            error,
+      };
+}
+
+Приклад коду для реєстрації користувача в системі:
+
+try {
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+  });
+  if (error) {
+    return {
+      success: false,
+      error,
+    };
+  }
+  if (data) {
+    return {
+      success: true,
+      redirectTo: "/",
+    };
+  }
+} catch (error: any) {
+  return {
+    success: false,
+    error,
+  };
+}
+return {
+  success: false,
+  error: {
+    message: "Register failed",
+    name: "Invalid email or password",
+  },
+};
+
+Приклад коду для перевірки авторизації користувача:
+
+try {
+  const { data } = await supabaseClient.auth.getSession();
+  const { session } = data;
+  if (!session) {
+    return {
+      authenticated: false,
+      error: {
+        message: "Check failed",
+        name: "Session not found",
+      },
+      logout: true,
+      redirectTo: "/login",
+    };
+  }
+} catch (error: any) {
+  return {
+    authenticated: false,
+    error: error || {
+      message: "Check failed",
+      name: "Not authenticated",
+    },
+    logout: true,
+    redirectTo: "/login",
+  };
+}
+return {
+  authenticated: true,
+};
+
+	Наступною частиною функціоналу бізнес-логіки буде створення звітів для обраного користувача. Функціонально сервер буде повертати статистичні дані користувача за минулий тиждень. Код шляху для генерування щотижневих статистичних даних звітів наведено в Додатку А.
+
+	Наступною частиною є автоматична система сповіщень про щотижневий звіт статистичних даних. Функцію для самих даних вже створено, тепер реалізуває Cron Job для регулярного формування звітів та сповіщення користувачів у форматі email-повідомлень. Для реалізації email-сповіщень будемо використовувати безкоштовну версію Sendgrid.
+
+
+Рисунок 1 - Сповіщення зі звітом
+
+4. Тестування системи
+	Записуємо змістовне відео з тестуванням бізнес-логіки та функцій адміністрування серверної частини системи, проставляємо таймкоди та завантажуємо на сервіс YouTube. Посилання на відео: https://youtu.be/YjXM2QCUgYg.
+ВИСНОВКИ
+
+	У ході виконання роботи було розроблено бізнес-логіку та функції адміністрування серверної частини програмної системи.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ДОДАТОК А
+ФУНКЦІЯ ДЛЯ РЕАЛІЗАЦІЇ ЩОТИЖНЕВИХ ЗВІТІВ
+
+
+import { createClient } from "jsr:@supabase/supabase-js@2";
+import { SMTPClient } from "https://deno.land/x/denomailer/mod.ts";
+export const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+Deno.serve(async (req: Request) => {
+  try {
+    const authorization = req.headers.get('authorization');
+    console.log(Deno.env.get('CRON_SECRET'));
+    if (authorization !== `Bearer ${Deno.env.get('CRON_SECRET')}`) {
+      throw new Error('Unauthorized');
+    }
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+    // Initialize Denomailer SMTPClient
+    const client = new SMTPClient({
+      connection: {
+        hostname: Deno.env.get("EMAIL_HOST") ?? "",
+        port: parseInt(Deno.env.get("EMAIL_PORT") ?? "465"),
+        tls: true,
+        auth: {
+          username: Deno.env.get("EMAIL_USERNAME") ?? "",
+          password: Deno.env.get("EMAIL_PASSWORD") ?? "",
+        },
+      },
+    });
+    console.log(Deno.env.get("EMAIL_USERNAME") ?? "", Deno.env.get("EMAIL_PASSWORD") ?? "");
+    // Get all users
+    const { data: users, error: usersError } = await supabaseClient
+      .from('users')
+      .select('*');
+    if (usersError) throw new Error(`Failed to fetch users: ${usersError.message}`);
+    const results = [];
+    const errors = [];
+    // Generate report for each user
+    for (const user of users) {
+      try {
+        // Generate report
+        const reportResponse = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/generate-weekly-report?userId=${user.auth_id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+          }
+        );
+        if (!reportResponse.ok) {
+          throw new Error(`Failed to generate report for user ${user.auth_id}`);
+        }
+        const report = await reportResponse.json();
+        // Format email message
+        const message = `
+  <h2>Weekly Health Report</h2>
+  <p><strong>Period:</strong> ${report.start_date} to ${report.end_date}</p>
+  <h3>Summary:</h3>
+  <ul>
+    <li><strong>Steps:</strong> ${report.metrics.steps.average}/day</li>
+    <li><strong>Calories:</strong> ${report.metrics.calories.average}/day</li>
+    <li><strong>Water:</strong> ${report.metrics.water_ml.average}ml/day</li>
+    <li><strong>Days Tracked:</strong> ${report.days_tracked}</li>
+  </ul>
+`.trim();
+        console.log(user.email);
+        // Send email if email exists
+        if (user.email) {
+          await client.send({
+            from: Deno.env.get("EMAIL_USERNAME") ?? "",
+            to: user.email,
+            subject: "Weekly Health Report",
+            content: "Your weekly health report is ready.",
+            html: message,
+          });
+          console.log(`Email sent to ${user.email}`);
+        }
+        results.push({
+          userId: user.auth_id,
+          success: true,
+          reportGenerated: true,
+          emailSent: !!user.email,
+        });
+      } catch (error) {
+        console.error(`Error processing user ${user.auth_id}:`, error);
+        errors.push({
+          userId: user.auth_id,
+          error: error.message,
+        });
+      }
+    }
+    await client.close();
+    return new Response(
+      JSON.stringify({
+        success: true,
+        results,
+        errors,
+        timestamp: new Date().toISOString(),
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("Error in weekly-report-cron:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message || "An unknown error occurred",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}); 
+
+
