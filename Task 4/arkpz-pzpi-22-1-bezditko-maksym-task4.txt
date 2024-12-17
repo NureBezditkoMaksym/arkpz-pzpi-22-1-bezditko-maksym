@@ -1,0 +1,352 @@
+﻿Харківський університет радіоелектроніки
+Факультет комп'ютерних наук
+Кафедра програмної інженерії
+
+
+
+
+
+ЗВІТ
+до лабораторної роботи з дисципліни
+"Аналіз та рефакторинг коду"
+на тему: "РОЗРОБКА IoT КЛІЄНТА 
+(БІЗНЕС-ЛОГІКИ ТА ФУНКЦІЙ НАЛАШТУВАННЯ)"
+
+
+
+
+
+
+
+
+
+Виконав ст. гр. ПЗПІ-22-1
+Бездітко Максим Андрійович
+
+Перевірив
+Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Харків 2024 р.
+1 МЕТА
+
+Розробити бізнес-логіку та функції налаштування для IoT клієнта програмної системи.
+
+2 ХІД РОБОТИ
+
+Розробка будови програмного забезпечення ІоТ клієнта.
+Опишемо архітектуру програмного забезпечення ІоТ клієнта на базі Arduino ESP32, який виконує функції входу в систему, відстеження доданих користувачем показників здоров'я за поточний день та контролю наявності внесених даних для увімкнення індикації.
+Основні модулі та компоненти:
+Модуль налаштувань:
+Завдання:
+Завантаження та зберігання початкових налаштувань з флеш-пам’яті ESP32. Список налаштувань: Wi-Fi SSID, URL сервера, email користувача.
+Функціональність:
+Функція loadConfig() ;
+Структура даних Config з полями: wifi_ssid, server_url, email.
+Модуль зв’язку з мережею:
+Завдання:
+Підключення до Wi-Fi за наданими параметрами;
+Виконання HTTP/HTTPS запитів до сервера для: перевірки наявності даних за поточний день, надсилання показників здоров’я.
+Функціональність:
+connectWiFi() - встановлення Wi-Fi з’єднання;
+hasDailyData(server_url, email) - перевірка, чи додані показники здоров’я на сервері за поточний день;
+updateHealthMetric(server_url, email, calories, water_ml, steps) - надсилання виміряних даних на сервер.
+Модуль датчиків введення:
+Завдання:
+Обробка натискань кнопок для введення значень калорій, води та кількості кроків.
+Функціональність:
+button1, button2, button3 - кнопки, що відповідають за додавання різних показників здоров'я;
+handleButtonEvents() - обробка стану кнопок;
+Підключення програмної затримки (debounce) через бібліотеку ezButton.
+Модуль індикації:
+Завдання: 
+Увімкнення або вимкнення світлодіода для вказування статусу введення показників за день.
+Функціональність:
+checkHealthMetricToday(email) - перевірка стану на сервері для індикації;
+Світлодіод (LED_PIN) вмикається, якщо показники не були додані, та вимикається при успішному внесенні даних.
+Модуль логіки додатку:
+Завдання:
+Ініціалізація всіх модулів;
+Циклічне виконання основних операцій:
+Перевірка кнопок для додавання показників;
+Контроль наявності даних на сервері для індикації;
+Надсилання даних через кнопку.
+Функціональність:
+setup() - викликається один раз при старті:
+Завантаження конфігурації;
+Підключення до Wi-Fi;
+Ініціалізація кнопок та світлодіода;
+Перевірка RTC для контролю часу.
+loop() – основний цикл:
+Перевірка стану кнопок для додавання калорій, води або кроків;
+Виклик updateHealthMetric() при натисканні кнопки;
+Виклик checkHealthMetricToday() для контролю статусу введення даних та оновлення індикації.
+Модуль контролю часу:
+Завдання:
+Перевірка часу на основі модуля RTC. Дозволяє виконувати перевірку внесених даних тільки після 20:00.
+Функціональність:
+RTC_DS3231 - модуль для отримання поточного часу;
+healthCheckTask() - задача, що перевіряє сервер кожні CHECK_INTERVAL мілісекунд, але пропускає виконання перевірки, якщо час менше 8 вечора.
+Потік виконання:
+Старт пристрою:
+setup() викликається при старті або перезапуску:
+Завантаження конфігурації з флеш-пам’яті (loadConfig());
+Підключення до Wi-Fi (connectWiFi());
+Ініціалізація кнопок та RTC.
+Основний цикл loop():
+Постійна перевірка стану кнопок для виклику updateHealthMetric();
+Циклічний виклик checkHealthMetricToday() для індикації статусу додавання даних.
+Задача для перевірки індикації:
+Запускається у фоновому режимі через FreeRTOS у функції healthCheckTask().
+Перевіряє поточний час через RTC;
+Пропускає перевірку, якщо година менше 20:00;
+Виконує перевірку статусу доданих даних та оновлює світлодіод.
+
+2. Створення UML діаграми прецедентів для ІоТ клієнта.
+	На основі розробленої будови, створемо UML діаграму прецедентів. Діаграма представлена на рисунку 1.
+
+
+Рисунок 1 - UML діаграма прецедентів для ІоТ клієнта
+
+3. Розробка бізнес-логіки та функцій налаштування ІоТ клієнта.
+Бізнес-логіка:
+При старті пристрій завантажує конфігурацію (параметри Wi-Fi, URL сервера та email користувача);
+Підключається до Wi-Fi та виконує перевірку наявності внесених показників здоров’я на сервері;
+Згідно з введенням користувача, додані показники здоров'я (калорії, вода, кроки) відправляються на віддалений сервер;
+Перевіряється статус внесення даних на сервер, і при їх відсутності увімкнеться світлодіод для індикації;
+Процес повторюється циклічно з певним інтервалом.
+Функції налаштування:
+loadConfig() - завантажує збережені параметри: Wi-Fi SSID/пароль, URL сервера, email користувача з флеш-пам'яті ESP32.
+
+4. Створення діаграми діяльності для ІоТ клієнта.
+	На основі описаної бізнес-логіки розроблена діаграма діяльності для IoT клієнта. Діаграма представлена на рисунку 2.
+
+
+Рисунок 2 - Діаграма діяльності для ІоТ клієнта
+
+5. Створення програмної реалізації бізнес-логіки та функцій налаштування ІоТ клієнта.
+
+	Використовуючи технологію Arduino та сайт емулятор wokwi.com, розробимо вищеописані функції бізнес-логіки та функції налаштування для ІоТ клієнта.
+	Почнемо з функції налаштування, це окремий файл сonfig.h/сonfig.cpp, котрий містить функцію, що використовує консоль для отримання потрібних даних. Програмний код:
+
+// config.h
+#ifndef CONFIG_H
+#define CONFIG_H
+#include <Arduino.h>
+#include <RTClib.h>
+#define LED_PIN 2
+
+struct Config {
+  String wifi_ssid;
+  String server_url;
+  String email;
+};
+
+extern Config config;
+extern RTC_DS3231 rtc;
+
+void loadConfig(Config &cfg);
+#endif
+
+// config.cpp
+#include "config.h"
+Config config;
+RTC_DS3231 rtc;
+
+void loadConfig(Config &cfg) {
+  cfg.wifi_ssid = "Wokwi-GUEST";
+  cfg.server_url = "https://liidbdlfcghqjvfjdhqq.supabase.co";
+  Serial.println("Введіть email користувача:");
+  while (Serial.available() == 0) {
+    delay(100);
+  }
+  cfg.email = Serial.readStringUntil('\n');
+  cfg.email.trim();
+  Serial.print("Email збережено: ");
+  Serial.println(cfg.email);
+}
+
+	Ключовою функцією є комунікація з сервером, вона реалізована в файлі api.h/api.cpp. Код з цих файлів наведений у Додатку А.
+
+У файлах network.h/network.cpp є функція підʼєднання до WiFi, яка спирається на стандартну бібліотеку для ESP32, модуля, що надає легкий доступ до мережі. Ось код з цих файлів:
+
+// network.h
+
+#ifndef NETWORK_H
+#define NETWORK_H
+#include <WiFi.h>
+bool connectWiFi(const String &ssid);
+#endif
+
+// network.cpp
+
+#include "network.h"
+bool connectWiFi(const String &ssid) {
+  WiFi.begin(ssid.c_str());
+  unsigned long startAttemptTime = millis();
+  const unsigned long timeout = 20000;
+  while (WiFi.status() != WL_CONNECTED && (millis() - startAttemptTime) < timeout) {
+    delay(500);
+  }
+  return WiFi.status() == WL_CONNECTED;
+}
+
+Файл ініціалізації:
+
+#include <ezButton.h>
+#include "config.h"
+#include "buttons.h"
+#include "tasks.h"
+#include "network.h"
+#include "api.h"
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Starting Health Tracker...");
+  pinMode(LED_PIN, OUTPUT);
+  loadConfig(config);
+  if (!connectWiFi(config.wifi_ssid)) {
+    Serial.println("Wi-Fi connection failed. Restarting...");
+    delay(5000);
+    ESP.restart();
+  }
+  if (!rtc.begin()) {
+    Serial.println("Couldn't find RTC. Dead now.");
+    while (1);
+  }
+  initializeButtons();
+  startHealthCheckTask();
+}
+void loop() {
+  handleButtonEvents();
+}
+
+	Емульоване середовище зображено на рисунку 3.
+
+
+Рисунок 3 - ІоТ клієнт в емульованому середовищі
+
+	Фінальна версія ІоТ клієнта збережена як проєкт на емуляторі, за посиланням https://wokwi.com/projects/417411223610318849.
+
+6. Тестування системи
+	Записуємо змістовне відео з тестуванням бізнес-логіки та функцій конфігурування ІоТ клієнта, проставляємо таймкоди та завантажуємо на сервіс YouTube. Посилання на відео: https://youtu.be/jo-9XVL6ZiQ.
+ВИСНОВКИ
+
+	У ході виконання роботи було розроблено бізнес-логіку та функції налаштування для IoT клієнта програмної системи.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ДОДАТОК А
+ФУНКЦІОНАЛ ФАЙЛІВ api.h та api.cpp 
+
+// api.h
+
+#ifndef API_H
+#define API_H
+#include <Arduino.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <config.h>
+void updateHealthMetric(const String &server_url, const String &email, int calories, int water_ml, int steps);
+bool hasDailyData(const String &server_url, const String &email);
+void checkHealthMetricToday(const String &email);
+#endif
+
+// api.cpp
+
+#include "api.h"
+void updateHealthMetric(const String &server_url, const String &email, int calories, int water_ml, int steps) {
+  HTTPClient http;
+  String endpoint = server_url + "/functions/v1/create-health-metric";
+  DynamicJsonDocument doc(256);
+  doc["user_email"] = email;
+  doc["calories"] = calories;
+  doc["water_ml"] = water_ml;
+  doc["steps"] = steps;
+  String requestBody;
+  serializeJson(doc, requestBody);
+  Serial.printf("Sending request to: %s\n", endpoint.c_str());
+  Serial.printf("Request body: %s\n", requestBody.c_str());
+  http.begin(endpoint);
+  http.addHeader("Content-Type", "application/json");
+  int httpCode = http.POST(requestBody);
+  http.end();
+  if (httpCode == 200 || httpCode == 201) {
+    Serial.println("Health metric updated successfully.");
+    digitalWrite(LED_PIN, LOW);
+  } else {
+    Serial.printf("Failed to update metric. HTTP code: %d\n", httpCode);
+  }
+}
+bool hasDailyData(const String &server_url, const String &email) {
+  HTTPClient http;
+  String endpoint = server_url + "/functions/v1/check-health-metric-today?email=" + email;
+  http.begin(endpoint);
+  int httpCode = http.GET();
+  if (httpCode == 200) {
+    String payload = http.getString();
+    DynamicJsonDocument doc(1024);
+    deserializeJson(doc, payload);
+    bool addedToday = doc["addedToday"];
+    return addedToday;
+  } else {
+    Serial.printf("Failed to check metric status. HTTP code: %d\n", httpCode);
+    return false;
+  }
+  http.end();
+}
+void checkHealthMetricToday(const String &email) {
+  bool addedToday = hasDailyData(config.server_url, email);
+  if (!addedToday) {
+    digitalWrite(LED_PIN, HIGH);
+    Serial.println("User hasn't added a metric today. LED ON.");
+  } else {
+    digitalWrite(LED_PIN, LOW);
+    Serial.println("User has added a metric today. LED OFF.");
+  }
+}
+
+
+
