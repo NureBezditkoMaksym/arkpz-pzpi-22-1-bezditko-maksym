@@ -1,0 +1,224 @@
+﻿Харківський університет радіоелектроніки
+Факультет комп'ютерних наук
+Кафедра програмної інженерії
+
+
+
+
+
+ЗВІТ
+до лабораторної роботи з дисципліни
+"Аналіз та рефакторинг коду"
+на тему: "РОЗГОРТАННЯ ПРОГРАМНОЇ СИСТЕМИ ТА ДЕМОНСТРАЦІЯ ЇЇ РОБОТИ"
+
+
+
+
+
+
+
+
+
+Виконав ст. гр. ПЗПІ-22-1
+Бездітко Максим Андрійович
+
+Перевірив
+Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Харків 2024 р.
+1 МЕТА
+
+Розгорнути програмну систему та продемонструвати її роботу.
+
+2 ХІД РОБОТИ
+
+1. Розгортування реалізованої програмної системи.
+Для розгортання системи використаємо Supabase та Supabase CLI, що надають послуги для безоплатного розгортування невеликих сервісів.
+Протягом попередніх лабораторних робіт було розроблено та створено локальне середовище розробки. Повна конфігурація локального середовища наведена в Додатку А.
+Створимо публічне середовище розробки, перейшовши на сайт https://supabase.com/. 
+
+
+Рисунок 1 - Панель керування середовищем Supabase
+
+	Створимо базу даних, обравши за основу PostgreSQL.
+
+
+Рисунок 2 - Створені таблиці в базі даних
+	Розгорнемо серверні функції, які імплементують бізнес-логіку додатку за допомогою команди supabase functions deploy.
+
+
+Рисунок 3 - Результат виконання команди
+
+
+Рисунок 4 - Перелік розгорнутих серверних функцій
+
+2. Перевірка та налаштування роботи розгорнутої програмної системи.
+
+	Перевіримо коректність роботи нашої системи, використовуючи Postman (додаток для тестування API). Результат представлений на рисунку 5.
+
+
+Рисунок 5 - Успішний запит до серверної частини
+
+	Як можемо побачити, запит виконано успішно. Спробуємо повернути щойно створеного користувача для того, щоб упевнитись, що база даних не повертає помилок та працює консистентно.
+
+
+Рисунок 4 - Результат створення користувача
+
+3. Тестування системи
+	Записуємо змістовне відео з тестуванням функціоналу, що був описаний у розділі 2.2 Vision & Scope функціональність програмної системи, проставляємо таймкоди та завантажуємо на сервіс YouTube. Посилання на відео: https://youtu.be/L9wmKH67M0Q.
+
+ВИСНОВКИ
+
+	У ході виконання роботи було розгорнуто програмну систему та продемонстровано її роботу.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ДОДАТОК А
+КОНФІГУРАЦІЯ ЛОКАЛЬНОГО СЕРЕДОВИЩА РОЗРОБКИ SUPABASE
+
+project_id = "max-bezditko-nure"
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+[api.tls]
+enabled = false
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+[db.seed]
+enabled = true
+sql_paths = ['./seed.sql']
+[realtime]
+enabled = true
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+openai_api_key = "env(OPENAI_API_KEY)"
+[inbucket]
+enabled = true
+port = 54324
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+[storage.image_transformation]
+enabled = true
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["https://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+secure_password_change = false
+max_frequency = "1s"
+otp_length = 6
+otp_expiry = 3600
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+template = "Your code is {{ .Code }} ."
+max_frequency = "5s"
+[auth.sms.twilio]
+enabled = false
+account_sid = ""
+message_service_sid = ""
+auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+[auth.mfa]
+max_enrolled_factors = 10
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+[auth.external.apple]
+enabled = false
+client_id = ""
+secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = false
+[auth.third_party.firebase]
+enabled = false
+[auth.third_party.auth0]
+enabled = false
+[auth.third_party.aws_cognito]
+enabled = false
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+inspector_port = 8083
+[analytics]
+enabled = true
+port = 54327
+backend = "postgres"
+[experimental]
+orioledb_version = ""
+s3_host = "env(S3_HOST)"
+s3_region = "env(S3_REGION)"
+s3_access_key = "env(S3_ACCESS_KEY)"
+s3_secret_key = "env(S3_SECRET_KEY)"
+
